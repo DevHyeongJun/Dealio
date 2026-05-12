@@ -1,7 +1,16 @@
-export function formatCurrency(value: number | string): string {
+export type CurrencyCode = 'KRW' | 'USD';
+
+export function formatCurrency(value: number | string, currency: CurrencyCode = 'KRW'): string {
   const n = typeof value === 'string' ? Number(value) : value;
   if (Number.isNaN(n)) return '-';
-  return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(n);
+  const locale = currency === 'USD' ? 'en-US' : 'ko-KR';
+  const fractionDigits = currency === 'USD' ? 2 : 0;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: fractionDigits,
+  }).format(n);
 }
 
 export function formatDate(value?: string | null): string {

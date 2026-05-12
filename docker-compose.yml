@@ -7,9 +7,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-quotation}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -23,24 +23,29 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # backend 의 앱 설정은 ./backend/.env 에서 읽는다 (CORS_ORIGIN, SMTP_*).
+    # 단, DATABASE_URL 과 NODE_ENV 는 컴포즈 네트워크 / 빌드 환경에 맞게 강제 오버라이드한다.
+    env_file:
+      - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quotation}?schema=public
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quotation}?schema=public
+      FILE_STORAGE_PATH: /app/FILE_STORAGE
     ports:
       - "4000:4000"
-    command: sh -c "npx prisma migrate deploy && node server.js"
+    volumes:
+      # 프로젝트 루트의 FILE_STORAGE/ 를 컨테이너 안에 그대로 마운트 (사업자등록증 등 업로드 파일 영구 보관)
+      - ./FILE_STORAGE:/app/FILE_STORAGE
+    command: sh -c "node ./node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss && node server.js"
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE: /api
+        VITE_API_BASE: /dealio/api
     restart: unless-stopped
     depends_on:
       - backend
+    # vite dev 서버(호스트 3000) 와 충돌 방지를 위해 도커는 3001 사용. FRONTEND_PORT 로 변경 가능.
     ports:
-      - "3000:80"
-
-volumes:
-  postgres_data:
+      - "${FRONTEND_PORT:-3001}:80"

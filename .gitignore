@@ -1,7 +1,18 @@
 node_modules
 .next
 dist
+# 환경변수 — 모든 위치(./, ./backend/, ./frontend/)의 .env 무시
 .env
-.env.local
+.env.*
 *.log
 .DS_Store
+
+# Postgres bind-mount data
+pg_data/
+
+# 업로드 파일 (사업자등록증 등)
+FILE_STORAGE/
+
+# Local runtime
+.frontend.pid
+logs/

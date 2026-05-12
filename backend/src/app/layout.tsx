@@ -1,4 +1,4 @@
-export const metadata = { title: 'Quotation API' };
+export const metadata = { title: 'Dealio API' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
